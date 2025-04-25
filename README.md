@@ -17,7 +17,7 @@
     - Implements dummy GET and POST behavior in the client  
     - Focuses on hiding web traffic
   - **Varun**  
-    - Handles self-destruction logic for both server and client  
+    - Handles self-destruction logic for client  
     - Applies XOR obfuscation to the implant
 
 ## FUTURE
