@@ -11,7 +11,7 @@
 
 - **Team Responsibilities**
   - **Neha**  
-    - Implements controller logic to queue tasks  
+    - Implements controller logic to queue tasks and upload endpoint
     - Explores steganography techniques
   - **Saadhvi**  
     - Implements dummy GET and POST behavior in the client  
