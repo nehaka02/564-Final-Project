@@ -7,7 +7,8 @@
   - Endpoints can be invoked by either the client (implant) or the controller
 
 - **Implant Obfuscation Strategy**
-  - Uses a **dummy GET** request followed by **POST** requests to request tasks
+  - ~~Uses a **dummy GET** request followed by **POST** requests to request tasks~~
+  - Using tradition client/server model between C2 Server and implant 
 
 - **Team Responsibilities**
   - **Neha**  
@@ -24,5 +25,13 @@
 
 - Implement **AES encryption**
 
+## 4/29 Notes 
+- **Implementation Details**
+  - Implant Obfuscation : XOR the binary
+  - C2 Security:
+    - Encryption: Encrypt commands that C2 sends to the implant
+  - Exfiltration Security:
+    - Encrypting the output of the given command
+    - Obfuscating using steganography 
 
 
