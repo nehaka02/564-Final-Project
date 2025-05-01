@@ -54,8 +54,7 @@ def exec(cmd):
             destroy()
         elif cmd_lst[0] == "upload": 
             print(f"[+] Reading {cmd_lst[1]}")
-            with open(cmd_lst[1], "rb") as img_file: 
-                result = str(base64.b64encode(img_file.read()))
+            pass #needs to be implemented
         else: 
             print("[+] Executing command: %s" % cmd)
             output = subprocess.run(cmd_lst, capture_output=True, text=True)
