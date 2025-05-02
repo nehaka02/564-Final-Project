@@ -33,14 +33,9 @@ def encrypt(plain_str):
 def decrypt(ciphertext): 
     ciphertext = ciphertext.encode("latin-1")
     init_v = ciphertext[-16:]
-    print("1")
-    print(type(global_key))
-    print(type(init_v))
     cipher = AES.new(global_key, AES.MODE_CBC, init_v)
-    print("2")
     msg = ciphertext[:-16]
     plaintext = cipher.decrypt(msg)
-    print("3")
     plaintext = plaintext[:-plaintext[len(plaintext)-1]]
     print(f"[*] Unencrypted Message: {plaintext.decode()}")
     return plaintext.decode()
@@ -94,7 +89,6 @@ def receive_data():
         print(f"Received and saved file: {filename}")
         
         deobfuscated_data = lsb.reveal(save_path)
-        print(type(deobfuscated_data))
         output = decrypt(deobfuscated_data)
         print(output)
         

