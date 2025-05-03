@@ -6,7 +6,7 @@ from Crypto.Cipher import AES
 from stegano import lsb
 from diffiehellman import DiffieHellman
 
-
+shared_key = None
 app = Flask(__name__)
 
 # Predefined command menu
@@ -64,6 +64,7 @@ def send_public_key():
     global shared_key
     res = request.get_json()["key"]
     shared_key = dh1.generate_shared_key(res.encode('latin-1'))
+    print(shared_key)
 
 # A controller can invoke this endpoint to task the client
 @app.route('/assign/<int:cmd_index>', methods=['POST'])
