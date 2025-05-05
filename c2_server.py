@@ -13,10 +13,10 @@ app = Flask(__name__)
 
 # Predefined command menu
 command_menu = {
-    0: "find /home -iname '*.doc*' -o -iname '*.odt' -o -iname '*.txt'"
-    1: "find /home -iname '*draft*' -o -iname '*report*'"
-    2: "find /home -iname '*contract*' -o -iname '*.pdf'"
-    3: "grep -ril 'confidential' /home"
+    0: "find /home -iname '*.doc*' -o -iname '*.odt' -o -iname '*.txt'",
+    1: "find /home -iname '*draft*' -o -iname '*report*'",
+    2: "find /home -iname '*contract*' -o -iname '*.pdf'",
+    3: "grep -ril 'confidential' /home",
     4: 'upload', # Special non-Linux command that requests specific files
     5: 'destroy', # Special non-Linux command that causes client to self-destruct
     6: "ls -la" # For testing
